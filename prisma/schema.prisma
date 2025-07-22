@@ -1,0 +1,189 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 2. Define the generator. This tells Prisma to generate the Prisma Client.
+// The client is a type-safe query builder for your models.
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER // Regular employee
+  MANAGER // Can approve requests for their team
+  HR // Can give final approval for requests
+  ADMIN // Has full access to the system
+}
+
+// --- NEW ---
+// Defines the classification for an employee.
+enum EmployeeClassification {
+  RDRDC
+  RDHFSI
+  TWC
+}
+
+// Defines the possible statuses for any leave or overtime request.
+enum RequestStatus {
+  PENDING_MANAGER // Awaiting manager approval
+  PENDING_HR // Awaiting HR approval
+  APPROVED // Final approval by HR
+  REJECTED // Rejected by either manager or HR
+  CANCELLED // Cancelled by the user before approval
+}
+
+enum LeaveSession {
+  FULL_DAY
+  MORNING // Represents the first half of the workday
+  AFTERNOON // Represents the second half of the workday
+}
+
+model User {
+  id             String                  @id @default(uuid())
+  employeeId     String                  @unique // Unique identifier for each employee
+  email          String                  @unique
+  password       String // Hashed password for authentication
+  name           String
+  role           UserRole                @default(USER)
+  // --- NEW ---: Field for employee classification.
+  classification EmployeeClassification?
+
+  // A user can be part of a team, which is managed by a manager.
+  deptId     String?
+  department Department? @relation(fields: [deptId], references: [id], onDelete: SetNull)
+
+  // Many-to-many relationship with departments through DepartmentManager
+  managedDepartments DepartmentManager[]
+
+  // --- NEW ---: Direct approver relationship (self-relation)
+  // Each user can have one direct approver/manager.
+  approverId String?
+  approver   User?   @relation("UserApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  // A manager can have multiple direct reports.
+  reports    User[]  @relation("UserApprover")
+
+  // Relationships to other models
+  leaveRequests    LeaveRequest[]
+  overtimeRequests OvertimeRequest[]
+  leaveBalances    LeaveBalance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Represents a team or department within the organization.
+model Department {
+  id   String @id @default(cuid())
+  name String @unique
+
+  // Many-to-many relationship with managers through DepartmentManager
+  managers DepartmentManager[]
+
+  // A team can have multiple members.
+  members User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Junction table for many-to-many relationship between departments and managers
+model DepartmentManager {
+  id           String @id @default(cuid())
+  departmentId String
+  managerId    String
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  manager    User       @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([departmentId, managerId])
+}
+
+// --- NEW ---
+// Model to define different types of leave and their properties.
+// Replaces the LeaveType enum for greater flexibility.
+model LeaveType {
+  id                   String @id @default(cuid())
+  name                 String @unique // e.g., "VACATION", "SICK"
+  defaultAllocatedDays Float  @default(0) // Default days credited for this leave type per year.
+
+  // Relationships
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Stores all leave requests submitted by users.
+model LeaveRequest {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // --- MODIFIED ---: Changed from enum to a relation.
+  leaveTypeId String
+  leaveType   LeaveType     @relation(fields: [leaveTypeId], references: [id])
+  startDate   DateTime      @db.Date
+  endDate     DateTime      @db.Date
+  reason      String
+  status      RequestStatus @default(PENDING_MANAGER)
+  // Field to support half-day leaves.
+  session     LeaveSession  @default(FULL_DAY)
+
+  // --- Approval Fields ---
+  managerActionBy String?
+  managerActionAt DateTime?
+  managerComments String?
+  hrActionBy      String?
+  hrActionAt      DateTime?
+  hrComments      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Stores all overtime requests submitted by users.
+model OvertimeRequest {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Precise start and end times for accurate data
+  startTime DateTime
+  endTime   DateTime
+  reason    String
+  status    RequestStatus @default(PENDING_MANAGER)
+
+  // --- Approval Fields ---
+  managerActionBy String?
+  managerActionAt DateTime?
+  managerComments String?
+  hrActionBy      String?
+  hrActionAt      DateTime?
+  hrComments      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Tracks the leave balance for each user for each type of leave.
+model LeaveBalance {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // --- MODIFIED ---: Changed from enum to a relation.
+  leaveTypeId   String
+  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year          Int // The calendar year for which this balance is valid
+  allocatedDays Float
+  usedDays      Float     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- MODIFIED ---: Updated unique constraint to use leaveTypeId.
+  // A user can only have one balance entry for a specific leave type per year.
+  @@unique([userId, leaveTypeId, year])
+}
