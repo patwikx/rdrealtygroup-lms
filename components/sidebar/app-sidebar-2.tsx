@@ -43,12 +43,12 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Leave Balances",
+          title: "— Leave Balances",
           icon: Home,
           url: "/dashboard/leave-balances",
         },
         {
-          title: "Leave Types",
+          title: "— Leave Types",
           url: "/dashboard/leave-types",
         },
       ],
@@ -59,11 +59,11 @@ const data = {
       icon: ChartAreaIcon,
       items: [
         {
-          title: "Leave Reports",
+          title: "— Leave Reports",
           url: "/dashboard/reports/leave",
         },
         {
-          title: "Overtime Reports",
+          title: "— Overtime Reports",
           url: "/dashboard/reports/overtime",
         },
       ],
@@ -73,15 +73,15 @@ const data = {
       url: "/dashboard/departments",
       icon: Settings2,
         items: [
-
-        {
-          title: "System Health",
-          url: "#",
-        },
          {
-          title: "Users & Department",
+          title: "— Users & Department",
           url: "/dashboard/user-management",
         },
+        {
+          title: "— System Health",
+          url: "#",
+        },
+
       ],
     },
   ],
