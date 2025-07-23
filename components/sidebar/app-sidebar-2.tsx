@@ -2,24 +2,15 @@
 
 import * as React from "react"
 import {
-  AudioWaveform,
+
   BookOpen,
-  Bot,
-  Building,
   CalendarCheck,
   CalendarClock,
-  CalendarPlusIcon,
   ChartAreaIcon,
-  Command,
-  Frame,
   GalleryVerticalEnd,
   Home,
   LayoutDashboard,
-  Map,
-  PieChart,
   Settings2,
-  SquareTerminal,
-  Users2,
 } from "lucide-react"
 
 
@@ -114,31 +105,81 @@ const data = {
   ],
 }
 
+// Define roles for better readability and maintenance
+const ROLES = {
+  STAFF: "STAFF",
+  MANAGER: "MANAGER",
+  ADMIN: "ADMIN",
+  HR: "HR"
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-      const { user, isLoading } = useSessionState()
+  const { user, isLoading } = useSessionState()
+
+  // Filter the navigation links based on the user's role.
+  // useMemo prevents re-calculating this on every render.
+  const filteredProjects = React.useMemo(() => {
+    if (!user?.role) return [] // If no user or role, show nothing
+
+    return data.projects.filter((project) => {
+      switch (project.name) {
+        case "Leave Processing":
+          // Only show to MANAGER and ADMIN
+          return user.role === ROLES.MANAGER || user.role === ROLES.ADMIN || user.role === ROLES.HR
+        case "Dashboard":
+        case "Leave History":
+          // Show to everyone
+          return true
+        default:
+          // Hide any other links by default
+          return false
+      }
+    })
+  }, [user])
+
+  // Filter the main settings navigation based on role
+  const filteredNavMain = React.useMemo(() => {
+    if (!user?.role) return []
+
+    // ADMIN sees everything
+    if (user.role === ROLES.ADMIN) {
+      return data.navMain
+    }
+
+    // MANAGER sees Leave Management and Reports
+    if (user.role === ROLES.ADMIN || user.role === ROLES.HR) {
+        return data.navMain.filter(item => item.title !== "System Settings")
+    }
+
+    // STAFF only sees Leave Management
+    if (user.role === ROLES.STAFF) {
+        return data.navMain.filter(item => item.title === "Leave Management")
+    }
+
+    return []
+  }, [user])
 
 
-  return (
+ return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
-      <SidebarContent>
-        <NavProjects projects={data.projects} />
-        <NavMain items={data.navMain} />
-
-      </SidebarContent>
-        {isLoading ? (
-          <div className="flex items-center gap-2 p-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <div className="flex-1">
-              <Skeleton className="h-4 w-24 mb-1" />
-              <Skeleton className="h-3 w-32" />
-            </div>
+<SidebarContent>
+  <NavProjects projects={filteredProjects} />
+  <NavMain items={filteredNavMain} userRole={user?.role} />
+</SidebarContent>
+      {isLoading ? (
+        <div className="flex items-center gap-2 p-2">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-24 mb-1" />
+            <Skeleton className="h-3 w-32" />
           </div>
-        ) : (
-          user && <NavUser user={user} />
-        )}
+        </div>
+      ) : (
+        user && <NavUser user={user} />
+      )}
       <SidebarRail />
     </Sidebar>
   )

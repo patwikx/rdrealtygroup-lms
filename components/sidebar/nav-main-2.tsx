@@ -17,9 +17,14 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+const ROLES = {
+  ADMIN: "ADMIN",
+  HR: "HR",
+}
 
 export function NavMain({
   items,
+    userRole, // 1. Accept the userRole prop
 }: {
   items: {
     title: string
@@ -31,10 +36,14 @@ export function NavMain({
       url: string
     }[]
   }[]
+    userRole?: string // Define its type
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Settings</SidebarGroupLabel>
+      {/* 2. Conditionally render the label */}
+      {(userRole === ROLES.ADMIN || userRole === ROLES.HR) && (
+        <SidebarGroupLabel>Settings</SidebarGroupLabel>
+      )}
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

@@ -7,6 +7,7 @@ export async function loginAction(prevState: string | undefined, formData: FormD
   try {
     // Use redirectTo option to ensure proper redirect after successful login
     await signIn("credentials", {
+      email: formData.get("email"),
       employeeId: formData.get("employeeId"),
       password: formData.get("password"),
       redirectTo: "/dashboard",

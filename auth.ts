@@ -16,14 +16,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // credentials: { ... }
 
       async authorize(credentials) {
-        // This is where you retrieve the user from the database and verify credentials.
-        if (!credentials?.email || !credentials.password) {
+       if (!credentials?.employeeId || !credentials.password) {
           return null;
         }
 
         // 1. Find the user in the database
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { employeeId: credentials.employeeId as string },
         });
 
         if (!user) {

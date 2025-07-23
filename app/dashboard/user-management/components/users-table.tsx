@@ -105,9 +105,10 @@ export function UserTable({ users, departments }: UserTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+           <TableHead>Employee ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Employee ID</TableHead>
+
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Created</TableHead>
@@ -124,9 +125,10 @@ export function UserTable({ users, departments }: UserTableProps) {
             ) : (
               filteredUsers.map((user) => (
                 <TableRow key={user.id}>
+                                    <TableCell>{user.employeeId}</TableCell>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.employeeId}</TableCell>
+
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
                   </TableCell>

@@ -2,15 +2,15 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-
+import { SiteHeader } from "../components/site-header"
 import { AppSidebar } from "@/components/sidebar/app-sidebar-2"
-import { SiteHeader } from "../../components/site-header"
-import LeaveReportsPageWrapper from "./components/leave-reports-wrapper"
+import AccountPageWrapper from "./components/profile-page-wrapper"
 
 
 
 
-export default function LeaveReports() {
+
+export default async function AccountsPage() {
 
   return (
     <SidebarProvider
@@ -27,7 +27,8 @@ export default function LeaveReports() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
   <div className="gap-4 space-y-6 px-4 lg:px-6">
-            <LeaveReportsPageWrapper />
+              <AccountPageWrapper />
+                 {/* Stats */}
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { IconCreditCard, IconDotsVertical, IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react"
+import { IconDotsVertical, IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react"
 import { signOut } from "next-auth/react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 
 type UserProps = {
   id: string
@@ -24,6 +25,7 @@ type UserProps = {
 
 export function NavUser({ user }: { user: UserProps }) {
   const { isMobile } = useSidebar()
+  const router = useRouter();
 
   const fallback = user.name
     ?.split(" ")
@@ -74,13 +76,9 @@ export function NavUser({ user }: { user: UserProps }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/accounts')}>
                 <IconUserCircle />
                 Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconNotification />
