@@ -12,7 +12,7 @@ const registerUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.nativeEnum(UserRole),
   deptId: z.string().optional(),
   approverId: z.string().optional(),
@@ -24,7 +24,7 @@ const updateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
   deptId: z.string().optional(),
   approverId: z.string().optional(),
   classification: z.nativeEnum(EmployeeClassification).optional(),
@@ -32,7 +32,7 @@ const updateUserSchema = z.object({
 
 const changePasswordSchema = z.object({
   id: z.string(),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
 })
 
 export type User = {
@@ -72,6 +72,11 @@ export type Approver = {
 export async function getUsers(): Promise<User[]> {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        employeeId: {
+          not: 'admin', // Exclude the user with ID 'admin'
+        },
+      },
       include: {
         department: {
           select: {
@@ -123,6 +128,9 @@ export async function getApprovers(): Promise<Approver[]> {
         role: {
           in: [UserRole.MANAGER, UserRole.HR, UserRole.ADMIN],
         },
+        NOT: {
+          employeeId: 'admin'
+        }
       },
       select: {
         id: true,

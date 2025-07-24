@@ -31,9 +31,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 // --- VISUAL: Imported icons for the form fields ---
-import { Loader2, User as UserIcon, Badge, Mail, Users, Building } from "lucide-react"
-import { UserRole } from "@prisma/client"
-import { Department, updateUser, User } from "@/lib/actions/user-actions"
+import { Loader2, User as UserIcon, Badge, Mail, Users, Building, UserCheck } from "lucide-react"
+import { EmployeeClassification, UserRole } from "@prisma/client"
+import { Approver, Department, getApprovers, updateUser, User } from "@/lib/actions/user-actions"
 import { toast } from "sonner"
 
 // Original form schema (unchanged)
@@ -42,8 +42,10 @@ const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
   deptId: z.string().optional(),
+  approverId: z.string().optional(),
+  classification: z.enum(EmployeeClassification).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -57,6 +59,7 @@ interface EditUserDialogProps {
 export function EditUserDialog({ user, departments, children }: EditUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+    const [approvers, setApprovers] = useState<Approver[]>([])
 
   // Original useForm hook (unchanged)
   const form = useForm<FormData>({
@@ -68,6 +71,8 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
       employeeId: user.employeeId,
       role: user.role,
       deptId: user.deptId || "DEFAULT_DEPT_ID",
+       approverId: undefined,
+      classification: undefined,
     },
   })
 
@@ -81,9 +86,19 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
         employeeId: user.employeeId,
         role: user.role,
         deptId: user.deptId || "DEFAULT_DEPT_ID",
+        approverId: user.approverId || undefined,
+        classification: user.classification || undefined
       })
     }
   }, [open, user, form])
+
+    useEffect(() => {
+      if (open) {
+        Promise.all([
+          getApprovers().then(setApprovers).catch(console.error)
+        ])
+      }
+    }, [open])
 
   // Original onSubmit function (unchanged)
   async function onSubmit(data: FormData) {
@@ -173,51 +188,50 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
 
 
             {/* --- VISUAL: Grouped select fields in a responsive grid --- */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center">
-                      <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                      Role
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {/* Original hardcoded options */}
-                        <SelectItem value="USER">User</SelectItem>
-                        <SelectItem value="MANAGER">Manager</SelectItem>
-                        <SelectItem value="HR">HR</SelectItem>
-                        <SelectItem value="ADMIN">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+<div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+  <FormField
+    control={form.control}
+    name="role"
+    render={({ field }) => (
+      <FormItem className="w-full min-w-0">
+        <FormLabel className="flex items-center">
+          <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+          Role
+        </FormLabel>
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <FormControl>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a role" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent className="w-full">
+            <SelectItem value="USER">User</SelectItem>
+            <SelectItem value="MANAGER">Manager</SelectItem>
+            <SelectItem value="HR">HR</SelectItem>
+            <SelectItem value="ADMIN">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
 
               <FormField
                 control={form.control}
                 name="deptId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full min-w-0">
                     <FormLabel className="flex items-center">
                       <Building className="mr-2 h-4 w-4 text-muted-foreground" />
                       Department
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a department" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="w-full">
                         {/* Original value prop */}
                         <SelectItem value="DEFAULT_DEPT_ID">No Department</SelectItem>
                         {departments.map((dept) => (
@@ -231,6 +245,65 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
                   </FormItem>
                 )}
               />
+            </div>
+
+             {/* --- NEW: Approver Selection Field --- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+  control={form.control}
+  name="approverId"
+  render={({ field }) => (
+    <FormItem className="w-full min-w-0">
+      <FormLabel className="flex items-center">
+        <UserCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+        Approver/Manager
+      </FormLabel>
+      <Select onValueChange={field.onChange} value={field.value || "none"}>
+        <FormControl>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select an approver" />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent className="w-full">
+          <SelectItem value="none">No Approver</SelectItem>
+          {approvers.map((approver) => (
+            <SelectItem key={approver.id} value={approver.id}>
+              {approver.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
+             <FormField
+  control={form.control}
+  name="classification"
+  render={({ field }) => (
+    <FormItem className="w-full min-w-0">
+      <FormLabel className="flex items-center">
+        <Badge className="mr-2 h-4 w-4 text-muted-foreground" />
+        Business Unit
+      </FormLabel>
+      <Select onValueChange={field.onChange} value={field.value || "none"}>
+        <FormControl>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select business Unit" />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent className="w-full">
+          <SelectItem value="none">No Business Unit</SelectItem>
+          <SelectItem value="RDRDC">RDRDC</SelectItem>
+          <SelectItem value="RDHFSI">RDHFSI</SelectItem>
+          <SelectItem value="TWC">TWC</SelectItem>
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             </div>
 
             {/* --- VISUAL: Moved buttons to a DialogFooter --- */}
