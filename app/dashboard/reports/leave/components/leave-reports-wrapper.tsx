@@ -12,8 +12,6 @@ import { ReportTable } from "./leave-reports-table"
 import { toast } from "sonner"
 import { ReportFilters } from "./leave-reports-filter"
 
-
-
 export default function LeaveReportsPageWrapper() {
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null)
@@ -100,30 +98,89 @@ export default function LeaveReportsPageWrapper() {
     }
   }
 
+  // ✨ --- NEW HELPER FUNCTION TO GENERATE TABLE HTML --- ✨
+  const generateTableReportHTML = (data: ReportData): string => {
+    const headers = `
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Leave Type</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Days</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+    `
+
+    const rows = data.items
+      .map((item) => {
+        return `
+        <tr>
+          <td>${item.employeeName || "N/A"}</td>
+          <td>${item.department || "N/A"}</td>
+          <td>${item.leaveType || "N/A"}</td>
+          <td>${new Date(item.startDate).toLocaleDateString()}</td>
+          <td>${new Date(item.endDate).toLocaleDateString()}</td>
+          <td>${item.dayCount}</td>
+          <td>${item.status || "N/A"}</td>
+        </tr>
+      `
+      })
+      .join("")
+
+    return `<table>${headers}<tbody>${rows}</tbody></table>`
+  }
+
+  // ✨ --- IMPROVED PRINT FUNCTION (TABLE VERSION) --- ✨
   const handlePrint = () => {
+    if (!reportData || reportData.items.length === 0) {
+      toast.error("No data available to print.")
+      return
+    }
+
     const printStyles = `
       <style>
         @media print {
           @page { 
             size: landscape; 
-            margin: 0.5in; 
+            margin: 0.75in; 
           }
           body { 
-            font-size: 12px; 
             font-family: Arial, sans-serif;
+            font-size: 10px;
+            color: #333;
+          }
+          .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .report-header h2 {
+            margin: 0;
+            font-size: 16px;
+          }
+          .report-header p {
+            margin: 0;
+            font-size: 12px;
           }
           table { 
-            width: 100%; 
-            border-collapse: collapse; 
+            width: 100%;
+            border-collapse: collapse;
           }
-          th, td { 
-            border: 1px solid #ddd; 
-            padding: 4px; 
-            text-align: left; 
+          th, td {
+            padding: 6px 8px;
+            text-align: left;
+            border: none;
           }
-          th { 
-            background-color: #f5f5f5; 
-            font-weight: bold; 
+          thead tr {
+            border-bottom: 2px solid #000;
+          }
+          th {
+            font-weight: bold;
+          }
+          tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
           }
           .no-print { 
             display: none; 
@@ -132,7 +189,7 @@ export default function LeaveReportsPageWrapper() {
       </style>
     `
 
-    const printContent = document.querySelector(".print-content")?.innerHTML || ""
+    const tableHTML = generateTableReportHTML(reportData)
     const printWindow = window.open("", "_blank")
 
     if (printWindow) {
@@ -143,16 +200,24 @@ export default function LeaveReportsPageWrapper() {
             ${printStyles}
           </head>
           <body>
-            <h1>Leave Reports</h1>
-            <p>Generated on: ${new Date().toLocaleDateString()}</p>
-            ${printContent}
+            <div class="report-header">
+              <h2>RD REALTY GROUP - LEAVE & OT MANAGEMENT SYSTEM</h2>
+              <p>Leave Report - Generated on: ${new Date().toLocaleDateString()}</p>
+            </div>
+            ${tableHTML}
           </body>
         </html>
       `)
       printWindow.document.close()
-      printWindow.print()
+      printWindow.focus()
+      
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 250);
     }
   }
+
 
   const totalPages = reportData ? Math.ceil(reportData.totalCount / pageSize) : 0
 
@@ -186,7 +251,7 @@ export default function LeaveReportsPageWrapper() {
             {exporting ? "Exporting..." : "Export CSV"}
           </Button>
 
-          <Button onClick={handlePrint} variant="outline" size="sm" className="no-print bg-transparent">
+          <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
@@ -243,6 +308,7 @@ export default function LeaveReportsPageWrapper() {
         </CardHeader>
 
         <CardContent>
+          {/* This div is for screen display */}
           <div className="print-content">
             {reportData && reportData.items.length > 0 ? (
               <ReportTable data={reportData.items} onSort={handleSort} />

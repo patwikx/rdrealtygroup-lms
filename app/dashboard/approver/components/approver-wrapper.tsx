@@ -57,12 +57,6 @@ async function ApproverContent() {
             Review and process pending leave and overtime requests.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-muted-foreground">
-            Role: <span className="font-medium">{currentUser.role}</span>
-          </div>
-        </div>
       </div>
 
       {/* --- MODIFIED SECTION ---: Stats Cards are updated for clarity */}

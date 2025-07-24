@@ -88,8 +88,8 @@ export function ApprovalDialog({
 
   const getStatusBadge = (status: string) => {
     const variants: { [key: string]: string } = {
-      PENDING_MANAGER: 'bg-yellow-100 text-yellow-800',
-      PENDING_HR: 'bg-blue-100 text-blue-800',
+      PENDING_APPROVER: 'bg-yellow-100 text-yellow-800',
+      PENDING_PMD: 'bg-blue-100 text-blue-800',
       APPROVED: 'bg-green-100 text-green-800',
       REJECTED: 'bg-red-100 text-red-800',
       CANCELLED: 'bg-gray-100 text-gray-800',
@@ -220,7 +220,7 @@ export function ApprovalDialog({
               {request.managerActionAt && (
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="font-medium text-sm text-blue-800">
-                    Manager Action -{' '}
+                    Approver Action -{' '}
                     {format(
                       new Date(request.managerActionAt),
                       'MMM d, yyyy h:mm a'
@@ -236,7 +236,7 @@ export function ApprovalDialog({
               {request.hrActionAt && (
                 <div className="bg-green-50 p-3 rounded-lg">
                   <p className="font-medium text-sm text-green-800">
-                    HR Action -{' '}
+                    PMD Action -{' '}
                     {format(
                       new Date(request.hrActionAt),
                       'MMM d, yyyy h:mm a'
@@ -254,7 +254,7 @@ export function ApprovalDialog({
 
           <div className="space-y-2">
             <Label htmlFor="comments">
-              {userRole === 'MANAGER' ? 'Manager' : 'HR'} Comments
+              {userRole === 'MANAGER' ? 'Approver' : 'PMD'} Comments
             </Label>
             <Textarea
               id="comments"

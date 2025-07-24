@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-
 import type {
   OvertimeReportFilters as OvertimeFilters,
   OvertimeReportData,
@@ -20,7 +19,6 @@ import { OvertimeReportTable } from "./overtime-report-table"
 import { OvertimeReportFilters } from "./overtime-reports-filters"
 
 export default function OvertimeReportsPageWrapper() {
-
   const [reportData, setReportData] = useState<OvertimeReportData | null>(null)
   const [filterOptions, setFilterOptions] = useState<OvertimeFilterOptions | null>(null)
   const [filters, setFilters] = useState<OvertimeFilters>({})
@@ -106,30 +104,89 @@ export default function OvertimeReportsPageWrapper() {
     }
   }
 
+  // ✨ --- NEW HELPER FUNCTION TO GENERATE OVERTIME TABLE HTML --- ✨
+  const generateOvertimeTableHTML = (data: OvertimeReportData): string => {
+    const headers = `
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Start </th>
+          <th>End </th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Reason for OT</th>
+        </tr>
+      </thead>
+    `
+
+    const rows = data.items
+      .map((item) => {
+        return `
+        <tr>
+          <td>${item.employeeName || "N/A"}</td>
+          <td>${item.department || "N/A"}</td>
+          <td>${new Date(item.startTime).toLocaleDateString()}</td>
+              <td>${new Date(item.endTime).toLocaleDateString()}</td>
+          <td>${item.duration.toFixed(2)}</td>
+          <td>${item.status || "N/A"}</td>
+          <td>${item.reason || "N/A"}</td>
+        </tr>
+      `
+      })
+      .join("")
+
+    return `<table>${headers}<tbody>${rows}</tbody></table>`
+  }
+
+  // ✨ --- IMPROVED PRINT FUNCTION (TABLE VERSION) --- ✨
   const handlePrint = () => {
+    if (!reportData || reportData.items.length === 0) {
+      toast.error("No data available to print.")
+      return
+    }
+
     const printStyles = `
       <style>
         @media print {
           @page { 
             size: landscape; 
-            margin: 0.5in; 
+            margin: 0.75in; 
           }
           body { 
-            font-size: 12px; 
             font-family: Arial, sans-serif;
+            font-size: 10px;
+            color: #333;
+          }
+          .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .report-header h2 {
+            margin: 0;
+            font-size: 16px;
+          }
+          .report-header p {
+            margin: 0;
+            font-size: 12px;
           }
           table { 
-            width: 100%; 
-            border-collapse: collapse; 
+            width: 100%;
+            border-collapse: collapse;
           }
-          th, td { 
-            border: 1px solid #ddd; 
-            padding: 4px; 
-            text-align: left; 
+          th, td {
+            padding: 6px 8px;
+            text-align: left;
+            border: none;
           }
-          th { 
-            background-color: #f5f5f5; 
-            font-weight: bold; 
+          thead tr {
+            border-bottom: 2px solid #000;
+          }
+          th {
+            font-weight: bold;
+          }
+          tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
           }
           .no-print { 
             display: none; 
@@ -138,7 +195,7 @@ export default function OvertimeReportsPageWrapper() {
       </style>
     `
 
-    const printContent = document.querySelector(".print-content")?.innerHTML || ""
+    const tableHTML = generateOvertimeTableHTML(reportData)
     const printWindow = window.open("", "_blank")
 
     if (printWindow) {
@@ -149,14 +206,21 @@ export default function OvertimeReportsPageWrapper() {
             ${printStyles}
           </head>
           <body>
-            <h1>Overtime Reports</h1>
-            <p>Generated on: ${new Date().toLocaleDateString()}</p>
-            ${printContent}
+            <div class="report-header">
+              <h2>RD REALTY GROUP - LEAVE & OT MANAGEMENT SYSTEM</h2>
+              <p>Overtime Report - Generated on: ${new Date().toLocaleDateString()}</p>
+            </div>
+            ${tableHTML}
           </body>
         </html>
       `)
       printWindow.document.close()
-      printWindow.print()
+      printWindow.focus()
+      
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 250)
     }
   }
 
@@ -192,7 +256,7 @@ export default function OvertimeReportsPageWrapper() {
             {exporting ? "Exporting..." : "Export CSV"}
           </Button>
 
-          <Button onClick={handlePrint} variant="outline" size="sm" className="no-print bg-transparent">
+          <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
@@ -249,6 +313,7 @@ export default function OvertimeReportsPageWrapper() {
         </CardHeader>
 
         <CardContent>
+          {/* This div is for screen display */}
           <div className="print-content">
             {reportData && reportData.items.length > 0 ? (
               <OvertimeReportTable data={reportData.items} onSort={handleSort} />

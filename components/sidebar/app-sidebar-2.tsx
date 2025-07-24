@@ -93,7 +93,7 @@ const data = {
       icon: LayoutDashboard,
     },
     {
-      name: "Leave Processing",
+      name: "Leave & OT Processing",
       url: "/dashboard/approver",
       icon: CalendarCheck,
     },
@@ -123,7 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     return data.projects.filter((project) => {
       switch (project.name) {
-        case "Leave Processing":
+        case "Leave & OT Processing":
           // Only show to MANAGER and ADMIN
           return user.role === ROLES.MANAGER || user.role === ROLES.ADMIN || user.role === ROLES.HR
         case "Dashboard":

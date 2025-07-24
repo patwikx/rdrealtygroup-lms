@@ -1,4 +1,4 @@
-import { UserRole, EmployeeClassification, RequestStatus, LeaveSession } from '@prisma/client'
+import { EmployeeClassification, RequestStatus, LeaveSession } from '@prisma/client'
 
 export interface LeaveReportFilters {
   startDate?: string
