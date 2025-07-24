@@ -1,7 +1,7 @@
 export interface UserProfile {
   id: string
   employeeId: string
-  email: string
+    email: string | null
   name: string
   role: UserRole
   classification: EmployeeClassification | null
@@ -29,7 +29,7 @@ export interface UserStats {
 
 export interface UpdateProfileData {
   name: string
-  email: string
+    email: string | null
 }
 
 export interface ChangePasswordData {

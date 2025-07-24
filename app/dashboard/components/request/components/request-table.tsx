@@ -104,7 +104,7 @@ export type RequestData = {
   user?: {
     name: string
     employeeId: string
-    email?: string 
+    email?: string | null
   }
   leaveType?: LeaveTypeModel
   startDate?: Date

@@ -40,7 +40,7 @@ import { toast } from "sonner"
 const formSchema = z.object({
   id: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
   role: z.nativeEnum(UserRole),
   deptId: z.string().optional(),
@@ -64,7 +64,7 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
     defaultValues: {
       id: user.id,
       name: user.name,
-      email: user.email,
+      email: user.email || undefined,
       employeeId: user.employeeId,
       role: user.role,
       deptId: user.deptId || "DEFAULT_DEPT_ID",
@@ -77,7 +77,7 @@ export function EditUserDialog({ user, departments, children }: EditUserDialogPr
       form.reset({
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email || undefined,
         employeeId: user.employeeId,
         role: user.role,
         deptId: user.deptId || "DEFAULT_DEPT_ID",

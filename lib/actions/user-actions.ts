@@ -10,7 +10,7 @@ const prisma = new PrismaClient()
 // Validation schemas
 const registerUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.nativeEnum(UserRole),
@@ -22,7 +22,7 @@ const registerUserSchema = z.object({
 const updateUserSchema = z.object({
   id: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
   role: z.nativeEnum(UserRole),
   deptId: z.string().optional(),
@@ -38,7 +38,7 @@ const changePasswordSchema = z.object({
 export type User = {
   id: string
   name: string
-  email: string
+  email: string | null
   employeeId: string
   role: UserRole
   deptId: string | null
@@ -182,7 +182,7 @@ export async function registerUser(data: z.infer<typeof registerUserSchema>) {
       const newUser = await tx.user.create({
         data: {
           name: validatedData.name,
-          email: validatedData.email,
+          email: validatedData.email || null,
           employeeId: validatedData.employeeId,
           password: hashedPassword,
           role: validatedData.role,
@@ -206,7 +206,7 @@ export async function registerUser(data: z.infer<typeof registerUserSchema>) {
       }
     })
 
-    revalidatePath("/users")
+    revalidatePath("/dashboard/user-management")
     return { success: true, message: "User registered successfully with default leave balances" }
   } catch (error) {
     console.error("Registration error:", error)
@@ -258,7 +258,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
       where: { id: validatedData.id },
       data: {
         name: validatedData.name,
-        email: validatedData.email,
+        email: validatedData.email || null,
         employeeId: validatedData.employeeId,
         role: validatedData.role,
         deptId: validatedData.deptId || null,
@@ -267,7 +267,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
       },
     })
 
-    revalidatePath("/users")
+    revalidatePath("/dashboard/user-management")
     return { success: true, message: "User updated successfully" }
   } catch (error) {
     console.error("Update error:", error)
@@ -296,7 +296,7 @@ export async function changePassword(data: z.infer<typeof changePasswordSchema>)
       },
     })
 
-    revalidatePath("/users")
+    revalidatePath("/dashboard/user-management")
     return { success: true, message: "Password changed successfully" }
   } catch (error) {
     console.error("Password change error:", error)
@@ -313,7 +313,7 @@ export async function deleteUser(id: string) {
       where: { id },
     })
 
-    revalidatePath("/users")
+    revalidatePath("/dashboard/user-management")
     return { success: true, message: "User deleted successfully" }
   } catch (error) {
     console.error("Delete error:", error)

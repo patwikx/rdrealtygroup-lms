@@ -42,7 +42,7 @@ enum LeaveSession {
 model User {
   id             String                  @id @default(uuid())
   employeeId     String                  @unique // Unique identifier for each employee
-  email          String                  @unique
+  email          String?                 @unique
   password       String // Hashed password for authentication
   name           String
   role           UserRole                @default(USER)

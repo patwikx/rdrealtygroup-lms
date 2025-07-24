@@ -129,7 +129,7 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
                 <Input
                   id="email"
                   type="email"
-                  value={profileData.email}
+                  value={profileData.email || ""}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="Enter your email address"
                   required

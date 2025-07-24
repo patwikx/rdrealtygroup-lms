@@ -83,7 +83,7 @@ export function OvertimeReportTable({ data, onSort }: OvertimeReportTableProps) 
             <SortableHeader field="employeeId">Employee ID</SortableHeader>
             <SortableHeader field="employeeName">Employee</SortableHeader>
             <SortableHeader field="department">Department</SortableHeader>
-            <SortableHeader field="classification">Classification</SortableHeader>
+            <SortableHeader field="classification">Business Unit</SortableHeader>
             <SortableHeader field="startTime">Start Time</SortableHeader>
             <SortableHeader field="endTime">End Time</SortableHeader>
             <SortableHeader field="duration">Duration</SortableHeader>

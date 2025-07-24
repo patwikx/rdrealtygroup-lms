@@ -61,7 +61,6 @@ export function EmployeeManagement() {
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch =
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesDepartment = selectedDepartment === "all" || employee.department?.id === selectedDepartment
     const matchesRole = selectedRole === "all" || employee.role === selectedRole

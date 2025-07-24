@@ -6,7 +6,7 @@ export interface LeaveRequestWithDetails {
   // The nested user object no longer contains the department
   user: {
     name: string;
-    email: string;
+    email: string | null
     employeeId: string;
   };
   // leaveType is now an object from the related LeaveType model
@@ -33,7 +33,7 @@ export interface OvertimeRequestWithUser {
   // The nested user object no longer contains the department
   user: {
     name: string;
-    email: string;
+    email: string | null
     employeeId: string;
   };
   startTime: Date;

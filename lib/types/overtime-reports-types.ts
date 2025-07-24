@@ -13,7 +13,7 @@ export interface OvertimeReportItem {
   id: string
   employeeId: string
   employeeName: string
-  email: string
+    email: string | null
   department: string | null
   classification: EmployeeClassification | null
   startTime: string

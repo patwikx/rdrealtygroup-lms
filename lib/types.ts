@@ -8,7 +8,7 @@ export interface DepartmentWithManagers {
     id: string
     name: string
     employeeId: string
-    email: string
+    email: string | null
     role: UserRole
   }[]
   members: {
@@ -24,14 +24,14 @@ export interface AvailableManager {
   id: string
   name: string
   employeeId: string
-  email: string
+    email: string | null
   role: UserRole
 }
 
 export interface EmployeeWithDepartment {
   id: string
   name: string
-  email: string
+    email: string | null
   employeeId: string
   role: UserRole
   department: {
@@ -53,7 +53,7 @@ export interface EmployeeLeaveBalance {
     id: string
     name: string
     employeeId: string
-    email: string
+    email: string | null
     department: {
       id: string
       name: string

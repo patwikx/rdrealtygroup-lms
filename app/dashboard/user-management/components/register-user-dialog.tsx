@@ -26,13 +26,13 @@ import { toast } from "sonner"
 // Updated form schema to include approverId
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().optional(),
   employeeId: z.string().min(1, "Employee ID is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
   deptId: z.string().optional(),
   approverId: z.string().optional(),
-  classification: z.nativeEnum(EmployeeClassification).optional(),
+  classification: z.enum(EmployeeClassification).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -122,7 +122,7 @@ export function RegisterUserDialog() {
         <FormControl>
           <div className="relative">
             <Badge className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="X-000" {...field} className="pl-10" />
+            <Input placeholder="X-000" {...field} className="pl-10" required />
           </div>
         </FormControl>
         <FormMessage />
@@ -155,12 +155,12 @@ export function RegisterUserDialog() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email (optional)</FormLabel>
                   <FormControl>
                     {/* --- VISUAL: Added icon inside input --- */}
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input type="email" placeholder="example@email.com" {...field} className="pl-10" />
+                      <Input placeholder="example@email.com" {...field} className="pl-10" />
                     </div>
                   </FormControl>
                   <FormMessage />

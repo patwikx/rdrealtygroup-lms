@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,8 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
-  CalendarIcon, 
-  Clock, 
+  CalendarIcon,  
   Sun, 
   Moon, 
   Calendar as CalendarDays,
@@ -28,7 +26,7 @@ import {
   Baby,
   HeartHandshake
 } from 'lucide-react'
-import { format, differenceInDays, differenceInMinutes, set } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 // --- MODIFIED ---: Imported the model type for LeaveType
 import { type LeaveType as LeaveTypeModel, LeaveSession, RequestStatus } from "@prisma/client"
@@ -42,7 +40,7 @@ export type RequestData = {
   user?: {
     name: string
     employeeId: string
-    email?: string 
+    email?: string | null
   }
   leaveType?: LeaveTypeModel // Using the model type
   startDate?: Date

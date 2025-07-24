@@ -15,7 +15,7 @@ export interface LeaveReportItem {
   id: string
   employeeId: string
   employeeName: string
-  email: string
+    email: string | null
   department: string | null
   classification: EmployeeClassification | null
   leaveType: string
