@@ -140,7 +140,7 @@ export async function processLeaveRequest({
 
     const request = await prisma.leaveRequest.findUnique({
       where: { id: requestId },
-      include: { user: true, leaveType: true },
+      include: { user: true, leaveType: true }, // leaveType is crucial
     })
 
     if (!request) {
@@ -153,7 +153,7 @@ export async function processLeaveRequest({
     let updateData: Prisma.LeaveRequestUpdateInput = {}
     let finalStatus: RequestStatus = request.status
 
-    if (request.status === 'PENDING_MANAGER' && (isManagerOfUser || currentUser.role === 'ADMIN')) {
+    if (request.status === 'PENDING_MANAGER' && (isManagerOfUser || isHR)) { // Allow admin/hr to override
       finalStatus = action === 'approve' ? 'PENDING_HR' : 'REJECTED'
       updateData = {
         status: finalStatus,
@@ -173,40 +173,86 @@ export async function processLeaveRequest({
       return { success: false, error: 'You are not authorized to process this request.' }
     }
     
-    // If the final action is approval by HR, update the leave balance
+    // --- START: MODIFIED LOGIC BLOCK ---
+    // If the final action is HR approval for a paid leave, run a transaction.
     if (finalStatus === 'APPROVED' && request.leaveType.name !== 'UNPAID') {
-        let daysToIncrement = differenceInDays(request.endDate, request.startDate) + 1;
-        if (request.session !== 'FULL_DAY' && daysToIncrement === 1) {
-            daysToIncrement = 0.5;
+        
+      await prisma.$transaction(async (tx) => {
+        // 1. Calculate the number of days to deduct
+        const daysToDeduct = differenceInDays(request.endDate, request.startDate) + 1 - (request.session !== 'FULL_DAY' ? 0.5 : 0)
+
+        // 2. Determine which leave balance to use
+        let balanceLeaveTypeId = request.leaveTypeId;
+        if (request.leaveType.name === 'EMERGENCY') {
+          const vacationLeaveType = await tx.leaveType.findUnique({ where: { name: 'VACATION' }, select: { id: true }});
+          if (!vacationLeaveType) {
+            throw new Error('System configuration error: Vacation Leave type not found.');
+          }
+          balanceLeaveTypeId = vacationLeaveType.id;
         }
 
-        await prisma.leaveBalance.update({
-            where: {
-                userId_leaveTypeId_year: {
-                    userId: request.userId,
-                    leaveTypeId: request.leaveTypeId,
-                    year: request.startDate.getFullYear()
-                }
-            },
-            data: {
-                usedDays: { increment: daysToIncrement }
+        // 3. Find the correct leave balance record
+        const leaveBalance = await tx.leaveBalance.findUnique({
+          where: {
+            userId_leaveTypeId_year: {
+              userId: request.userId,
+              leaveTypeId: balanceLeaveTypeId,
+              year: request.startDate.getFullYear()
             }
+          }
         });
-    }
 
-    await prisma.leaveRequest.update({
-      where: { id: requestId },
-      data: updateData,
-    })
+        // 4. Validate the balance
+        if (!leaveBalance || leaveBalance.usedDays + daysToDeduct > leaveBalance.allocatedDays) {
+          const errorMsg = request.leaveType.name === 'EMERGENCY'
+            ? 'Insufficient Vacation Leave balance for this Emergency Leave.'
+            : 'Insufficient leave balance.';
+          throw new Error(errorMsg); // This will cancel the transaction
+        }
+
+        // 5. Update the balance
+        await tx.leaveBalance.update({
+          where: {
+            userId_leaveTypeId_year: {
+              userId: request.userId,
+              leaveTypeId: balanceLeaveTypeId,
+              year: request.startDate.getFullYear()
+            }
+          },
+          data: {
+            usedDays: { increment: daysToDeduct }
+          }
+        });
+        
+        // 6. Update the request itself
+        await tx.leaveRequest.update({
+          where: { id: requestId },
+          data: updateData,
+        });
+      });
+
+    } else {
+      // For rejections, unpaid leave, or manager approvals, just update the request
+      await prisma.leaveRequest.update({
+        where: { id: requestId },
+        data: updateData,
+      });
+    }
+    // --- END: MODIFIED LOGIC BLOCK ---
 
     revalidatePath('/approvals')
+    revalidatePath('/dashboard') // Revalidate for the user who made the request
     return { success: true }
+
   } catch (error) {
     console.error('Error processing leave request:', error)
+    if (error instanceof Error) {
+        // Catches errors from the transaction (e.g., "Insufficient balance")
+        return { success: false, error: error.message }
+    }
     return { success: false, error: 'Failed to process leave request' }
   }
 }
-
 // --- MODIFIED ---: This function also uses the direct 'approverId' for authorization.
 export async function processOvertimeRequest({
   action,

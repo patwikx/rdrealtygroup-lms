@@ -3,7 +3,6 @@ import { type LeaveBalance } from '@prisma/client';
 import {
   Plane,
   HeartPulse,
-  Briefcase,
   Ban,
   AlertTriangle,
   Users,
@@ -19,7 +18,7 @@ export interface LeaveBalanceWithDetails extends LeaveBalance {
   };
 }
 
-type LeaveTypeName = 'VACATION' | 'SICK' | 'MANDATORY' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
+type LeaveTypeName = 'VACATION' | 'SICK' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
 
 interface LeaveBalanceCardProps {
   balances: LeaveBalanceWithDetails[];
@@ -28,7 +27,6 @@ interface LeaveBalanceCardProps {
 const leaveTypeLabels: Record<LeaveTypeName, string> = {
   VACATION: 'Vacation',
   SICK: 'Sick Leave',
-  MANDATORY: 'Mandatory',
   UNPAID: 'Unpaid',
   EMERGENCY: 'Emergency',
   BEREAVEMENT: 'Bereavement',
@@ -39,7 +37,6 @@ const leaveTypeLabels: Record<LeaveTypeName, string> = {
 const leaveTypeIcons: Record<LeaveTypeName, React.ElementType> = {
     VACATION: Plane,
     SICK: HeartPulse,
-    MANDATORY: Briefcase,
     UNPAID: Ban,
     EMERGENCY: AlertTriangle,
     BEREAVEMENT: Users,
@@ -50,7 +47,6 @@ const leaveTypeIcons: Record<LeaveTypeName, React.ElementType> = {
 const leaveTypeProgressColors: Record<LeaveTypeName, string> = {
   VACATION: 'bg-blue-500',
   SICK: 'bg-rose-500',
-  MANDATORY: 'bg-purple-500',
   UNPAID: 'bg-slate-400',
   EMERGENCY: 'bg-amber-500',
   BEREAVEMENT: 'bg-indigo-500',
@@ -60,7 +56,7 @@ const leaveTypeProgressColors: Record<LeaveTypeName, string> = {
 
 
 export function LeaveBalanceCard({ balances }: LeaveBalanceCardProps) {
-  const displayedLeaveTypes = ['VACATION', 'SICK', 'MANDATORY'];
+  const displayedLeaveTypes = ['VACATION', 'SICK', 'UNPAID'];
 
   const filteredBalances = balances.filter(balance => 
     displayedLeaveTypes.includes(balance.leaveType.name)

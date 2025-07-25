@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 // --- MODIFIED ---: Removed LeaveType enum import, added Prisma for type hints
-import { RequestStatus, LeaveSession, Prisma } from '@prisma/client'
+import { RequestStatus, LeaveSession } from '@prisma/client'
 import { differenceInDays } from 'date-fns'
 
 // --- NEW ---: Action to fetch all available leave types from the database.
@@ -31,13 +31,13 @@ export async function createLeaveRequest(data: {
   reason: string
 }) {
   try {
-    // Calculate days and validate balance
+    // Calculate days (no changes here)
     let days = differenceInDays(data.endDate, data.startDate) + 1
     if (data.session !== LeaveSession.FULL_DAY) {
       days = days === 1 ? 0.5 : days - 0.5
     }
 
-    const leaveType = await prisma.leaveType.findUnique({ where: { id: data.leaveTypeId }});
+    const leaveType = await prisma.leaveType.findUnique({ where: { id: data.leaveTypeId } });
     if (!leaveType) {
         return { error: 'Invalid leave type specified.'}
     }
@@ -45,27 +45,54 @@ export async function createLeaveRequest(data: {
     // Check leave balance only for leave types that are not 'UNPAID'
     if (leaveType.name !== 'UNPAID') {
       const currentYear = new Date().getFullYear()
+
+      // --- START: MODIFIED LOGIC ---
+      // Determine which leave balance to check. Default to the requested leave type.
+      let balanceCheckLeaveTypeId = data.leaveTypeId;
+
+      // If the request is for Emergency Leave, we need to check the Vacation Leave balance instead.
+      if (leaveType.name === 'EMERGENCY') {
+        const vacationLeaveType = await prisma.leaveType.findUnique({
+          where: { name: 'VACATION' },
+          select: { id: true } // We only need the ID
+        });
+
+        if (!vacationLeaveType) {
+          // This is a safeguard in case 'VACATION' leave type doesn't exist.
+          return { error: 'Cannot process Emergency Leave: Vacation Leave type not found.' };
+        }
+        
+        balanceCheckLeaveTypeId = vacationLeaveType.id;
+      }
+      // --- END: MODIFIED LOGIC ---
+
       const leaveBalance = await prisma.leaveBalance.findUnique({
         where: {
-          // --- MODIFIED ---: Using the new unique identifier for leave balance
+          // --- MODIFICATION ---: Use the dynamically determined leave type ID for the balance check
           userId_leaveTypeId_year: {
             userId: data.userId,
-            leaveTypeId: data.leaveTypeId,
+            leaveTypeId: balanceCheckLeaveTypeId, // Use the potentially swapped ID
             year: currentYear,
           },
         },
       })
 
       if (!leaveBalance || leaveBalance.usedDays + days > leaveBalance.allocatedDays) {
-        return { error: 'Insufficient leave balance for the selected leave type.' }
+        // --- MODIFICATION ---: Adjust error message for clarity
+        const errorMessage = leaveType.name === 'EMERGENCY' 
+            ? 'Insufficient Vacation Leave balance for Emergency Leave.' 
+            : 'Insufficient leave balance for the selected leave type.';
+        return { error: errorMessage }
       }
     }
 
+    // Create the leave request (no changes here).
+    // It's important to still use the original `data.leaveTypeId` to correctly record
+    // the request as an "Emergency Leave".
     const leaveRequest = await prisma.leaveRequest.create({
       data: {
         userId: data.userId,
-        // --- MODIFIED ---: Connecting to the LeaveType model via its ID
-        leaveTypeId: data.leaveTypeId,
+        leaveTypeId: data.leaveTypeId, // Use the original ID here
         startDate: data.startDate,
         endDate: data.endDate,
         session: data.session,

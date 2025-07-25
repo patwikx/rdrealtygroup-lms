@@ -68,7 +68,7 @@ const leaveTypeConfig: Record<LeaveTypeName, {
     label: 'Emergency Leave', 
     icon: AlertTriangle, 
     color: 'text-orange-600 bg-orange-50 border-orange-200',
-    description: 'Urgent leave for unexpected situations'
+    description: 'Urgent leave for unexpected situations. This will be deducted on your Vaction Leave.'
   },
   BEREAVEMENT: { 
     label: 'Bereavement Leave', 
@@ -167,7 +167,7 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
         toast.error(result.error || 'Failed to submit leave request.')
       }
     } catch (error) {
-      toast.error('An unexpected error occurred.')
+      toast.error(`An unexpected error occurred. ${error}`)
     } finally {
       setLoading(false)
     }
