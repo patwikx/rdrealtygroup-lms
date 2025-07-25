@@ -47,7 +47,7 @@ export function RegisterUserDialog() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      email: "",
+      email: undefined,
       employeeId: "",
       password: "",
       role: UserRole.USER,
