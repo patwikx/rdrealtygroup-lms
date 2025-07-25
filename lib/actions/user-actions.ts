@@ -162,16 +162,12 @@ export async function registerUser(data: z.infer<typeof registerUserSchema>) {
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: validatedData.email },
           { employeeId: validatedData.employeeId },
         ],
       },
     })
 
     if (existingUser) {
-      if (existingUser.email === validatedData.email) {
-        throw new Error("Email already exists")
-      }
       if (existingUser.employeeId === validatedData.employeeId) {
         throw new Error("Employee ID already exists")
       }

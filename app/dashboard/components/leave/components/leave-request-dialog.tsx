@@ -20,7 +20,6 @@ import {
   AlertTriangle,
   Plane,
   Stethoscope,
-  Briefcase,
   Ban,
   Users,
   Baby,
@@ -33,7 +32,7 @@ import { createLeaveRequest } from '@/lib/actions/leave-actions'
 import { LeaveSession, type LeaveType } from '@prisma/client'
 import { toast } from 'sonner'
 
-type LeaveTypeName = 'VACATION' | 'SICK' | 'MANDATORY' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
+type LeaveTypeName = 'VACATION' | 'SICK' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
 
 interface LeaveRequestDialogProps {
   userId: string
@@ -58,12 +57,6 @@ const leaveTypeConfig: Record<LeaveTypeName, {
     icon: Stethoscope, 
     color: 'text-red-600 bg-red-50 border-red-200',
     description: 'Medical leave for illness or health issues'
-  },
-  MANDATORY: { 
-    label: 'Mandatory Leave', 
-    icon: Briefcase, 
-    color: 'text-purple-600 bg-purple-50 border-purple-200',
-    description: 'Required leave as per company policy'
   },
   UNPAID: { 
     label: 'Unpaid Leave', 
