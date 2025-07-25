@@ -190,13 +190,13 @@ export async function registerUser(data: z.infer<typeof registerUserSchema>) {
       const newUser = await tx.user.create({
         data: {
           name: validatedData.name,
-          email: validatedData.email || null,
+          email: validatedData.email || undefined, // Do not set null for optional fields
           employeeId: validatedData.employeeId,
           password: hashedPassword,
           role: validatedData.role,
-          deptId: validatedData.deptId || null,
-          approverId: validatedData.approverId || null,
-          classification: validatedData.classification || null,
+          deptId: validatedData.deptId || undefined, // Use undefined for optional fields
+          approverId: validatedData.approverId || undefined,
+          classification: validatedData.classification || undefined,
         },
       })
 
