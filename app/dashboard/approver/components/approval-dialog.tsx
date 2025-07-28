@@ -43,26 +43,20 @@ export function ApprovalDialog({
   const [comments, setComments] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // --- CORE FUNCTION - UNCHANGED ---
   const handleAction = async (action: 'approve' | 'reject') => {
     if (!request) return;
 
     setIsProcessing(true);
     try {
-      // --- MODIFIED BLOCK ---
-      // This block is updated to correctly handle the server action's response.
-
-      // 1. Await the result from the server action.
       const result = await (requestType === 'leave'
         ? processLeaveRequest({ action, comments, requestId: request.id })
         : processOvertimeRequest({ action, comments, requestId: request.id }));
 
-      // 2. Safely check if the result contains an error.
-      // The `in` operator checks for the property's existence, satisfying TypeScript.
       if (result && 'error' in result && result.error) {
         throw new Error(String(result.error));
       }
 
-      // 3. If no error, proceed with success toast.
       toast.success(
         `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`
       );
@@ -70,7 +64,6 @@ export function ApprovalDialog({
       setComments('');
       onOpenChange(false);
     } catch (error) {
-      // The thrown error (either from the action or network) is caught here.
       const errorMessage =
         error instanceof Error ? error.message : `Failed to ${action} request`;
       toast.error(errorMessage);
@@ -102,11 +95,11 @@ export function ApprovalDialog({
     );
   };
 
-  // The rest of the JSX remains the same...
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      {/* --- MODIFIED DIALOG CONTENT FOR SCROLLING --- */}
+      <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isLeaveRequest ? (
               <>
@@ -126,12 +119,14 @@ export function ApprovalDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        {/* --- SCROLLABLE CONTENT WRAPPER --- */}
+        <div className="flex-1 overflow-y-auto space-y-6 p-1 pr-6 -ml-1">
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Employee Details</h3>
               {getStatusBadge(request.status)}
             </div>
+            {/* The responsive grid already "compresses" on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-gray-500" />
@@ -266,7 +261,7 @@ export function ApprovalDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-end">
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
