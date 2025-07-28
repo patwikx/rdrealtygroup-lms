@@ -15,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, Eye, ShieldCheck, Users } from 'lucide-react';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { ApprovalDialog } from './approval-dialog';
-// --- MODIFIED ---: Updated to use the correct LeaveRequestWithDetails type
 import type {
   LeaveRequestWithDetails,
   OvertimeRequestWithUser,
@@ -23,7 +22,7 @@ import type {
 } from '@/lib/types/requests';
 
 interface RequestsTableProps {
-  leaveRequests: LeaveRequestWithDetails[]; // --- MODIFIED ---
+  leaveRequests: LeaveRequestWithDetails[];
   overtimeRequests: OvertimeRequestWithUser[];
   currentUser: UserWithRole;
 }
@@ -33,7 +32,6 @@ export function RequestsTable({
   overtimeRequests,
   currentUser,
 }: RequestsTableProps) {
-  // --- MODIFIED ---: Updated the state to use the correct type
   const [selectedRequest, setSelectedRequest] = useState<
     LeaveRequestWithDetails | OvertimeRequestWithUser | null
   >(null);
@@ -43,7 +41,6 @@ export function RequestsTable({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleViewRequest = (
-    // --- MODIFIED ---: Updated the function signature
     request: LeaveRequestWithDetails | OvertimeRequestWithUser,
     type: 'leave' | 'overtime'
   ) => {
@@ -86,8 +83,10 @@ export function RequestsTable({
   const calculateOvertimeDuration = (startTime: Date, endTime: Date) => {
     const hours = differenceInHours(new Date(endTime), new Date(startTime));
     if (hours < 1) {
-        const minutes = Math.round(differenceInHours(new Date(endTime), new Date(startTime)) * 60);
-        return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+      const minutes = Math.round(
+        differenceInHours(new Date(endTime), new Date(startTime)) * 60
+      );
+      return `${minutes} minute${minutes > 1 ? 's' : ''}`;
     }
     return `${hours} hour${hours > 1 ? 's' : ''}`;
   };
@@ -103,8 +102,6 @@ export function RequestsTable({
               <CardTitle>Leave Requests</CardTitle>
               <Badge variant="secondary">{leaveRequests.length}</Badge>
             </div>
-
-            {/* --- MODIFIED ---: Refined role display logic */}
             {currentUser.role === 'MANAGER' && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
@@ -126,12 +123,43 @@ export function RequestsTable({
           </CardHeader>
 
           <CardContent>
-            <div className="rounded-md border">
+            {/* MOBILE VIEW: Card List */}
+            <div className="space-y-4 md:hidden">
+              {leaveRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between gap-4 rounded-md border p-4"
+                >
+                  <div className="space-y-1">
+                    <p className="font-medium">{request.user.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {getStatusBadge(request.status)}
+                      <Badge variant="outline">{request.leaveType.name}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Submitted: {format(new Date(request.createdAt), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  {/* --- MODIFIED BUTTON --- */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewRequest(request, 'leave')}
+                    className="shrink-0"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Review
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP VIEW: Table */}
+            <div className="hidden rounded-md border md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Employee</TableHead>
-                    {/* --- MODIFIED ---: Removed Department column */}
                     <TableHead>Leave Type</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>Dates</TableHead>
@@ -151,12 +179,8 @@ export function RequestsTable({
                           </div>
                         </div>
                       </TableCell>
-                      {/* --- MODIFIED ---: Removed Department cell */}
                       <TableCell>
-                        <Badge variant="outline">
-                          {/* --- MODIFIED ---: Correctly accessing the name property */}
-                          {request.leaveType.name}
-                        </Badge>
+                        <Badge variant="outline">{request.leaveType.name}</Badge>
                       </TableCell>
                       <TableCell>
                         {calculateLeaveDuration(
@@ -203,14 +227,13 @@ export function RequestsTable({
       {/* Overtime Requests */}
       {overtimeRequests.length > 0 && (
         <Card>
-           <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               <CardTitle>Overtime Requests</CardTitle>
               <Badge variant="secondary">{overtimeRequests.length}</Badge>
             </div>
-             {/* --- MODIFIED ---: Refined role display logic */}
-             {currentUser.role === 'MANAGER' && (
+            {currentUser.role === 'MANAGER' && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
                 Manager Review
@@ -229,14 +252,50 @@ export function RequestsTable({
               </div>
             )}
           </CardHeader>
-          
+
           <CardContent>
-            <div className="rounded-md border">
+            {/* MOBILE VIEW: Card List */}
+            <div className="space-y-4 md:hidden">
+              {overtimeRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between gap-4 rounded-md border p-4"
+                >
+                  <div className="space-y-1">
+                    <p className="font-medium">{request.user.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {getStatusBadge(request.status)}
+                      <Badge variant="outline">
+                        {calculateOvertimeDuration(
+                          request.startTime,
+                          request.endTime
+                        )}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Submitted: {format(new Date(request.createdAt), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                   {/* --- MODIFIED BUTTON --- */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewRequest(request, 'overtime')}
+                    className="shrink-0"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Review
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* DESKTOP VIEW: Table */}
+            <div className="hidden rounded-md border md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Employee</TableHead>
-                     {/* --- MODIFIED ---: Removed Department column */}
                     <TableHead>Duration</TableHead>
                     <TableHead>Time Period</TableHead>
                     <TableHead>Status</TableHead>
@@ -255,7 +314,6 @@ export function RequestsTable({
                           </div>
                         </div>
                       </TableCell>
-                      {/* --- MODIFIED ---: Removed Department cell */}
                       <TableCell>
                         <Badge variant="outline">
                           {calculateOvertimeDuration(

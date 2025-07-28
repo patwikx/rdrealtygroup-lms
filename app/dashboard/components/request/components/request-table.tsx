@@ -49,7 +49,7 @@ import {
   Eye,
   Edit,
   Trash2,
-  RefreshCw, // --- NEW ---: Added for loading spinner
+  RefreshCw,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -78,7 +78,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-// --- NEW ---: Import AlertDialog components
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,11 +136,10 @@ const leaveTypeLabels: Record<LeaveTypeName, string> = {
   MATERNITY: 'Maternity Leave'
 }
 
-const RequestActionsCell = ({ row, leaveTypes }: { row: Row<RequestData>, leaveTypes: LeaveTypeModel[] }) => {
-  const request = row.original
+// --- MODIFIED ---: This component now accepts `request` directly, making it more reusable.
+const RequestActionsCell = ({ request, leaveTypes }: { request: RequestData, leaveTypes: LeaveTypeModel[] }) => {
   const [viewDetailsOpen, setViewDetailsOpen] = React.useState(false)
   const [editOpen, setEditOpen] = React.useState(false)
-  // --- NEW ---: State to control the cancel confirmation dialog
   const [isCancelAlertOpen, setIsCancelAlertOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
 
@@ -171,13 +169,12 @@ const RequestActionsCell = ({ row, leaveTypes }: { row: Row<RequestData>, leaveT
       toast.success("Request updated successfully!")
       setEditOpen(false)
     } catch (error) {
-      toast.error("Failed to update request.")
+      toast.error(`Failed to update request. ${error}`)
     } finally {
       setLoading(false)
     }
   }
 
-  // --- MODIFIED ---: The `confirm()` call is removed. The logic now just performs the action.
   const handleCancel = async () => {
     setLoading(true)
     try {
@@ -186,10 +183,10 @@ const RequestActionsCell = ({ row, leaveTypes }: { row: Row<RequestData>, leaveT
         toast.error(result.error)
       } else {
         toast.success('Request cancelled successfully')
-        setIsCancelAlertOpen(false) // Close the dialog on success
+        setIsCancelAlertOpen(false)
       }
     } catch (error) {
-      toast.error('Failed to cancel request')
+      toast.error(`Failed to update request. ${error}`)
     } finally {
       setLoading(false)
     }
@@ -217,12 +214,11 @@ const RequestActionsCell = ({ row, leaveTypes }: { row: Row<RequestData>, leaveT
           )}
           <DropdownMenuSeparator />
           {canCancel && (
-            // --- MODIFIED ---: This item now opens the AlertDialog instead of calling handleCancel directly.
             <DropdownMenuItem 
               className="text-red-600 focus:text-red-600 focus:bg-red-50"
               disabled={loading}
               onSelect={(e) => {
-                e.preventDefault() // Prevents the dropdown from closing
+                e.preventDefault()
                 setIsCancelAlertOpen(true)
               }}
             >
@@ -233,7 +229,6 @@ const RequestActionsCell = ({ row, leaveTypes }: { row: Row<RequestData>, leaveT
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* --- NEW ---: AlertDialog for cancel confirmation */}
       <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -415,7 +410,7 @@ const getColumns = (leaveTypes: LeaveTypeModel[]): ColumnDef<RequestData>[] => [
   },
   {
     id: "actions",
-    cell: ({ row }) => <RequestActionsCell row={row} leaveTypes={leaveTypes} />,
+    cell: ({ row }) => <RequestActionsCell request={row.original} leaveTypes={leaveTypes} />,
   },
 ]
 
@@ -460,8 +455,11 @@ export function RequestsDataTable({ title, description, requests: initialData, l
   }, [])
 
   React.useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
+    setData(initialData.filter(item => {
+      if (!globalFilter) return true;
+      return JSON.stringify(item).toLowerCase().includes(globalFilter.toLowerCase());
+    }));
+  }, [initialData, globalFilter]);
 
   const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
   const dataIds = React.useMemo<UniqueIdentifier[]>(() => data?.map(({ id }) => id), [data])
@@ -535,7 +533,36 @@ export function RequestsDataTable({ title, description, requests: initialData, l
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        {/* --- MOBILE VIEW --- */}
+        <div className="space-y-4 md:hidden">
+          {data.length > 0 ? data.map((request) => (
+            <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                        {showUser && request.user && <p className="font-semibold">{request.user.name}</p>}
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium capitalize">{request.type}</span>
+                             {request.leaveType && (
+                                <span className="text-sm text-muted-foreground">{leaveTypeLabels[request.leaveType.name as LeaveTypeName]}</span>
+                            )}
+                        </div>
+                    </div>
+                    <RequestActionsCell request={request} leaveTypes={leaveTypes} />
+                </div>
+                <div>
+                   <RequestStatusBadge status={request.status} />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    <p>Submitted: {formatDistanceToNow(request.createdAt, { addSuffix: true })}</p>
+                </div>
+            </div>
+          )) : (
+            <div className="h-24 text-center flex items-center justify-center">No results found.</div>
+          )}
+        </div>
+
+        {/* --- DESKTOP VIEW --- */}
+        <div className="hidden md:block space-y-4">
             <div className="rounded-md border">
                 <div className="w-full overflow-x-auto">
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
