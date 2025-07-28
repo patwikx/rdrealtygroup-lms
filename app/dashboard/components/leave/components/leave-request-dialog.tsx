@@ -24,7 +24,8 @@ import {
   Users,
   Baby,
   HeartHandshake,
-  Loader2
+  Loader2,
+  Hourglass
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -32,7 +33,7 @@ import { createLeaveRequest } from '@/lib/actions/leave-actions'
 import { LeaveSession, type LeaveType } from '@prisma/client'
 import { toast } from 'sonner'
 
-type LeaveTypeName = 'VACATION' | 'SICK' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
+type LeaveTypeName = 'VACATION' | 'SICK' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY' | 'CTO';
 
 interface LeaveRequestDialogProps {
   userId: string
@@ -87,7 +88,13 @@ const leaveTypeConfig: Record<LeaveTypeName, {
     icon: HeartHandshake, 
     color: 'text-pink-600 bg-pink-50 border-pink-200',
     description: 'Leave for new mothers'
-  }
+  },
+CTO: {
+  label: 'CTO',
+  icon: Hourglass,
+  color: 'text-teal-600 bg-teal-50 border-teal-200',
+  description: 'Time off earned in exchange for overtime hours worked.'
+}
 }
 
 const sessionConfig = {
