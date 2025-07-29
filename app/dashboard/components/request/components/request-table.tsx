@@ -123,7 +123,7 @@ export type RequestData = {
   hrComments?: string | null
 }
 
-type LeaveTypeName = 'VACATION' | 'SICK' | 'MANDATORY' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY';
+type LeaveTypeName = 'VACATION' | 'SICK' | 'MANDATORY' | 'UNPAID' | 'EMERGENCY' | 'BEREAVEMENT' | 'PATERNITY' | 'MATERNITY' | 'CTO';
 
 const leaveTypeLabels: Record<LeaveTypeName, string> = {
   VACATION: 'Vacation Leave',
@@ -133,7 +133,8 @@ const leaveTypeLabels: Record<LeaveTypeName, string> = {
   EMERGENCY: 'Emergency Leave',
   BEREAVEMENT: 'Bereavement Leave',
   PATERNITY: 'Paternity Leave',
-  MATERNITY: 'Maternity Leave'
+  MATERNITY: 'Maternity Leave',
+  CTO: 'CTO'
 }
 
 // --- MODIFIED ---: This component now accepts `request` directly, making it more reusable.

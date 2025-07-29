@@ -113,12 +113,6 @@ export default function LoginPage() {
                     <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
                       Password
                     </Label>
-                    <Link
-                      href="#"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-semibold transition-colors duration-200 hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
                   </div>
                   <Input
                     id="password"
