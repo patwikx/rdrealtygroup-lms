@@ -4,7 +4,6 @@ import {
 } from "@/components/ui/sidebar"
 import { SiteHeader } from "../components/site-header"
 import { AppSidebar } from "@/components/sidebar/app-sidebar-2"
-import { LeaveTypesManagement } from "../settings/components/leave-types-management"
 import SettingsPageWrapper from "../settings/components/settings-wrapper"
 
 
