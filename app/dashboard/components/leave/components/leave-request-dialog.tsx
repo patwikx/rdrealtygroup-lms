@@ -39,7 +39,7 @@ import {
 } from "lucide-react"
 // --- (1) UPDATED IMPORTS ---
 // Added startOfDay, subDays from date-fns and utcToZonedTime from date-fns-tz
-import { format, differenceInDays, startOfDay, subDays } from "date-fns"
+import { format, differenceInDays, startOfDay, subDays, set } from "date-fns"
 import { toZonedTime } from "date-fns-tz"
 // ----------------------------
 import { cn } from "@/lib/utils"
@@ -168,7 +168,7 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
     return selectedLeaveType?.name !== "SICK"
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!startDate || !endDate || !leaveTypeId || !reason.trim()) {
@@ -188,13 +188,18 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
 
     setLoading(true)
 
+    // --- FIX: Adjust dates to noon to prevent timezone shift ---
+    const adjustedStartDate = set(startDate, { hours: 12, minutes: 0, seconds: 0, milliseconds: 0 });
+    const adjustedEndDate = set(endDate, { hours: 12, minutes: 0, seconds: 0, milliseconds: 0 });
+    // -----------------------------------------------------------
+
     try {
       const result = await createLeaveRequest({
         userId,
         leaveTypeId,
-        startDate,
-        endDate,
-        session,
+        startDate: adjustedStartDate, // Pass the adjusted date
+        endDate: adjustedEndDate,     // Pass the adjusted date
+        session, // The session field is still used here as per your original code
         reason,
       })
 
