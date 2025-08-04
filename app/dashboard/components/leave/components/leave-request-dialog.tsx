@@ -37,7 +37,11 @@ import {
   Loader2,
   Hourglass,
 } from "lucide-react"
-import { format, differenceInDays } from "date-fns"
+// --- (1) UPDATED IMPORTS ---
+// Added startOfDay, subDays from date-fns and utcToZonedTime from date-fns-tz
+import { format, differenceInDays, startOfDay, subDays } from "date-fns"
+import { toZonedTime } from "date-fns-tz"
+// ----------------------------
 import { cn } from "@/lib/utils"
 import { createLeaveRequest } from "@/lib/actions/leave-actions"
 import { LeaveSession, type LeaveType } from "@prisma/client"
@@ -125,6 +129,13 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
   const [session, setSession] = useState<LeaveSession>(LeaveSession.FULL_DAY)
   const [reason, setReason] = useState("")
 
+  // --- (2) TIMEZONE-AWARE DATE LOGIC ---
+  // Define the target timezone
+  const timeZone = "Asia/Manila"
+  // Get the current date in the Manila timezone, set to the start of the day
+  const todayInManila = startOfDay(toZonedTime(new Date(), timeZone))
+  // -------------------------------------
+
   useEffect(() => {
     if (!open) {
       setStartDate(undefined)
@@ -146,7 +157,10 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
 
   const isVacationTooSoon = () => {
     if (selectedLeaveType?.name !== "VACATION" || !startDate) return false
-    return differenceInDays(startDate, new Date()) < 3
+    // --- (3) UPDATED VALIDATION ---
+    // Compare against the current date in the Manila timezone
+    return differenceInDays(startDate, todayInManila) < 3
+    // ----------------------------
   }
 
   // Helper function to determine if past dates should be disabled
@@ -268,14 +282,15 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
                     selected={startDate}
                     onSelect={setStartDate}
                     disabled={(date) => {
-                      // Only disable past dates if it's not sick leave
+                      // --- (4) UPDATED CALENDAR DISABLED LOGIC ---
                       if (shouldDisablePastDates()) {
-                        return date < new Date(new Date().setHours(0, 0, 0, 0))
+                        // Disable dates before today in Manila
+                        return date < todayInManila
                       }
-                      // For sick leave, allow all dates (or set a reasonable limit like 30 days ago)
-                      const thirtyDaysAgo = new Date()
-                      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+                      // For sick leave, allow filing up to 30 days ago, based on Manila time
+                      const thirtyDaysAgo = subDays(todayInManila, 30)
                       return date < thirtyDaysAgo
+                      // ------------------------------------------
                     }}
                     initialFocus
                   />
@@ -301,13 +316,11 @@ export function LeaveRequestDialog({ userId, leaveTypes, trigger }: LeaveRequest
                     selected={endDate}
                     onSelect={setEndDate}
                     disabled={(date) => {
-                      const minDate = startDate || new Date(new Date().setHours(0, 0, 0, 0))
-                      // For sick leave, allow past dates but not before start date
-                      if (selectedLeaveType?.name === "SICK") {
-                        return date < minDate
-                      }
-                      // For other leave types, don't allow past dates
+                      // --- (5) UPDATED CALENDAR MINIMUM DATE ---
+                      // The minimum selectable date is either the selected start date or today in Manila
+                      const minDate = startDate || todayInManila
                       return date < minDate
+                      // ----------------------------------------
                     }}
                     initialFocus
                   />
