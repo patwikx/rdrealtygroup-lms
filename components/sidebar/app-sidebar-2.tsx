@@ -41,8 +41,8 @@ export interface NavItem {
 const navigationData: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Leave & OT Processing", url: "/dashboard/approver", icon: CalendarCheck },
-   { title: "Leave Approval History", url: "/dashboard/approval-history", icon: CalendarCheck },
-  { title: "My Leave History", url: "/dashboard/leave-history", icon: BookOpen },
+  { title: "Leave History", url: "/dashboard/leave-history", icon: BookOpen },
+{ title: "Leave Approver History", url: "/dashboard/approver-history", icon: BookOpen },
   {
     title: "Leave Management",
     icon: CalendarClock,
@@ -130,30 +130,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isLoading } = useSessionState()
 
   // Filter the unified navigation list based on the user's role.
-  const filteredNavigation = React.useMemo(() => {
-    if (!user?.role) return []
-    const userRole = user.role
+const filteredNavigation = React.useMemo(() => {
+  if (!user?.role) return []
+  const userRole = user.role
 
-    return navigationData.filter(item => {
-      switch (item.title) {
-        case "Dashboard":
-        case "Leave History":
-          return true
-        case "Leave & OT Processing":
-          return [ROLES.MANAGER, ROLES.ADMIN, ROLES.HR].includes(userRole)
-            case "Leave Approval History":
-          return [ROLES.MANAGER, ROLES.ADMIN, ROLES.HR].includes(userRole)
-        case "Leave Management":
-          return [ROLES.ADMIN, ROLES.HR, ROLES.STAFF].includes(userRole)
-        case "Reports":
-        case "System Settings":
-          return [ROLES.ADMIN, ROLES.HR].includes(userRole)
-        default:
-          return false
-      }
-    })
-  }, [user])
-
+  return navigationData.filter(item => {
+    switch (item.title) {
+      case "Dashboard":
+      case "Leave History":
+        return true
+      case "Leave & OT Processing":
+        return [ROLES.MANAGER, ROLES.ADMIN, ROLES.HR].includes(userRole)
+      case "Leave Management":
+        return [ROLES.ADMIN, ROLES.HR, ROLES.STAFF].includes(userRole)
+      case "Leave Approver History":
+        return [ROLES.MANAGER, ROLES.ADMIN].includes(userRole)  // Allow for MANAGER and ADMIN
+      case "Reports":
+      case "System Settings":
+        return [ROLES.ADMIN, ROLES.HR].includes(userRole)
+      default:
+        return false
+    }
+  })
+}, [user])
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
