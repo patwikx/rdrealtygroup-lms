@@ -1,181 +1,186 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
- BookOpen,
- CalendarCheck,
- CalendarClock,
- ChartAreaIcon,
- GalleryVerticalEnd,
- Home,
- LayoutDashboard,
- Settings2,
+  BookOpen,
+  CalendarCheck,
+  CalendarClock,
+  ChartAreaIcon,
+  ChevronRight,
+  GalleryVerticalEnd,
+  Home,
+  LayoutDashboard,
+  LucideIcon,
+  Settings2,
 } from "lucide-react"
 
-import {
- Sidebar,
- SidebarContent,
- SidebarHeader,
- SidebarRail,
-} from "@/components/ui/sidebar"
-import { TeamSwitcher } from "./team-switcher"
-import { NavMain } from "./nav-main-2"
-import { NavProjects } from "./nav-projects"
-import { NavUser } from "@/app/dashboard/components/nav-user"
 import { useSessionState } from "@/lib/use-current-user"
-import { Skeleton } from "../ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { NavUser } from "@/app/dashboard/components/nav-user"
+import { TeamSwitcher } from "./team-switcher"
 
-// This is sample data.
-const data = {
- teams: [
-  {
-   name: "RD Realty Group - PMS",
-   logo: GalleryVerticalEnd,
-  },
- ],
- navMain: [
-  {
-   title: "Leave Management",
-   url: "#",
-   icon: CalendarClock,
-   isActive: true,
-   items: [
-    {
-     title: "— Leave Balances",
-     icon: Home,
-     url: "/dashboard/leave-balances",
-    },
-    {
-     title: "— Leave Types",
-     url: "/dashboard/leave-types",
-    },
-   ],
-  },
-  {
-   title: "Reports",
-   url: "#",
-   icon: ChartAreaIcon,
-   items: [
-    {
-     title: "— Leave Reports",
-     url: "/dashboard/reports/leave",
-    },
-    {
-     title: "— Overtime Reports",
-     url: "/dashboard/reports/overtime",
-    },
-   ],
-  },
-  {
-   title: "System Settings",
-   url: "/dashboard/departments",
-   icon: Settings2,
-   items: [
-    {
-     title: "— Users & Department",
-     url: "/dashboard/user-management",
-    },
-    {
-     title: "— System Health",
-     url: "#",
-    },
-   ],
-  },
- ],
- projects: [
-  {
-   name: "Dashboard",
-   url: "/dashboard",
-   icon: LayoutDashboard,
-  },
-  {
-   name: "Leave & OT Processing",
-   url: "/dashboard/approver",
-   icon: CalendarCheck,
-  },
-  {
-   name: "Leave History",
-   url: "/dashboard/leave-history",
-   icon: BookOpen,
-  },
- ],
+// 1. UNIFIED DATA STRUCTURE AND TYPE DEFINITION
+// =================================================================
+export interface NavItem {
+  title: string
+  url?: string
+  icon: LucideIcon
+  children?: NavItem[]
 }
 
-// Define roles for better readability and maintenance
+const navigationData: NavItem[] = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Leave & OT Processing", url: "/dashboard/approver", icon: CalendarCheck },
+   { title: "Leave Approval History", url: "/dashboard/approval-history", icon: CalendarCheck },
+  { title: "My Leave History", url: "/dashboard/leave-history", icon: BookOpen },
+  {
+    title: "Leave Management",
+    icon: CalendarClock,
+    children: [
+      { title: "Leave Balances", url: "/dashboard/leave-balances", icon: Home },
+      { title: "Leave Types", url: "/dashboard/leave-types", icon: BookOpen },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: ChartAreaIcon,
+    children: [
+      { title: "Leave Reports", url: "/dashboard/reports/leave", icon: ChartAreaIcon },
+      { title: "Overtime Reports", url: "/dashboard/reports/overtime", icon: ChartAreaIcon },
+    ],
+  },
+  {
+    title: "System Settings",
+    icon: Settings2,
+    children: [
+      { title: "Users & Department", url: "/dashboard/user-management", icon: Settings2 },
+      { title: "System Health", url: "#", icon: Settings2 },
+    ],
+  },
+]
+
+// Sample team data from your original component
+const teamsData = [{ name: "RD Realty Group - PMS", logo: GalleryVerticalEnd }]
+
+// 2. ROLE DEFINITIONS
+// =================================================================
 const ROLES = {
- STAFF: "STAFF",
- MANAGER: "MANAGER",
- ADMIN: "ADMIN",
- HR: "HR",
+  STAFF: "STAFF",
+  MANAGER: "MANAGER",
+  ADMIN: "ADMIN",
+  HR: "HR",
 }
 
+// 3. SIDEBAR LINK SUB-COMPONENT (FROM REFERENCE UX)
+// =================================================================
+function SidebarLink({ item }: { item: NavItem }) {
+  const pathname = usePathname()
+
+  if (item.children && item.children.length > 0) {
+    const isAnyChildActive = item.children.some(child => pathname === child.url)
+
+    return (
+      <Collapsible defaultOpen={isAnyChildActive}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full justify-start font-normal">
+            <item.icon className="mr-2 h-4 w-4" />
+            <span className="sidebar-link-text">{item.title}</span>
+            <ChevronRight className="ml-auto h-4 w-4 transition-transform ui-open:rotate-90 sidebar-link-text" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="sidebar-link-text">
+          <div className="ml-4 mt-2 flex flex-col space-y-1 border-l pl-4">
+            {item.children.map(child => (
+              <SidebarLink key={child.title} item={child} />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    )
+  }
+
+  const isActive = pathname === item.url
+  return (
+    <Button
+      variant={isActive ? "secondary" : "ghost"}
+      className="w-full justify-start font-normal"
+      asChild
+    >
+      <Link href={item.url || "#"}>
+        <item.icon className="mr-2 h-4 w-4" />
+        <span className="sidebar-link-text">{item.title}</span>
+      </Link>
+    </Button>
+  )
+}
+
+// 4. MAIN SIDEBAR COMPONENT (HYBRID)
+// =================================================================
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
- const { user, isLoading } = useSessionState()
+  const { user, isLoading } = useSessionState()
 
- // Filter the navigation links based on the user's role.
- // useMemo prevents re-calculating this on every render.
- const filteredProjects = React.useMemo(() => {
-  if (!user?.role) return [] // If no user or role, show nothing
+  // Filter the unified navigation list based on the user's role.
+  const filteredNavigation = React.useMemo(() => {
+    if (!user?.role) return []
+    const userRole = user.role
 
-  return data.projects.filter((project) => {
-   switch (project.name) {
-    case "Leave & OT Processing":
-     // Only show to MANAGER, ADMIN, and HR
-     return (
-      user.role === ROLES.MANAGER ||
-      user.role === ROLES.ADMIN ||
-      user.role === ROLES.HR
-     )
-    case "Dashboard":
-    case "Leave History":
-     // Show to everyone
-     return true
-    default:
-     // Hide any other links by default
-     return false
-   }
-  })
- }, [user])
+    return navigationData.filter(item => {
+      switch (item.title) {
+        case "Dashboard":
+        case "Leave History":
+          return true
+        case "Leave & OT Processing":
+          return [ROLES.MANAGER, ROLES.ADMIN, ROLES.HR].includes(userRole)
+            case "Leave Approval History":
+          return [ROLES.MANAGER, ROLES.ADMIN, ROLES.HR].includes(userRole)
+        case "Leave Management":
+          return [ROLES.ADMIN, ROLES.HR, ROLES.STAFF].includes(userRole)
+        case "Reports":
+        case "System Settings":
+          return [ROLES.ADMIN, ROLES.HR].includes(userRole)
+        default:
+          return false
+      }
+    })
+  }, [user])
 
- // Filter the main settings navigation based on role
- const filteredNavMain = React.useMemo(() => {
-  if (!user?.role) return []
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <TeamSwitcher teams={teamsData} />
+      </SidebarHeader>
+      
+      <SidebarContent>
+        <div className="flex flex-col space-y-1 p-2">
+          {filteredNavigation.map(item => (
+            <SidebarLink key={item.title} item={item} />
+          ))}
+        </div>
+      </SidebarContent>
 
-  // ADMIN and HR see everything
-  if (user.role === ROLES.ADMIN || user.role === ROLES.HR) {
-   return data.navMain
-  }
-
-
-  // STAFF only sees Leave Management
-  if (user.role === ROLES.STAFF) {
-   return data.navMain.filter((item) => item.title === "Leave Management")
-  }
-
-  return []
- }, [user])
-
- return (
-  <Sidebar collapsible="icon" {...props}>
-   <SidebarHeader>
-    <TeamSwitcher teams={data.teams} />
-   </SidebarHeader>
-   <SidebarContent>
-    <NavProjects projects={filteredProjects} />
-    <NavMain items={filteredNavMain} userRole={user?.role} />
-   </SidebarContent>
-   {isLoading ? (
-    <div className="flex items-center gap-2 p-2">
-     <Skeleton className="h-8 w-8 rounded-lg" />
-     <div className="flex-1">
-      <Skeleton className="h-4 w-24 mb-1" />
-      <Skeleton className="h-3 w-32" />
-     </div>
-    </div>
-   ) : (
-    user && <NavUser user={user} />
-   )}
-   <SidebarRail />
-  </Sidebar>
- )
+      {isLoading ? (
+        <div className="flex items-center gap-2 p-2">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <div className="flex-1 sidebar-link-text">
+            <Skeleton className="mb-1 h-4 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+      ) : (
+        user && <NavUser user={user} />
+      )}
+      
+      <SidebarRail />
+    </Sidebar>
+  )
 }
