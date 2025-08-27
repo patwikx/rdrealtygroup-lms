@@ -42,7 +42,7 @@ const navigationData: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Leave & OT Processing", url: "/dashboard/approver", icon: CalendarCheck },
   { title: "Leave History", url: "/dashboard/leave-history", icon: BookOpen },
-{ title: "Leave Approver History", url: "/dashboard/approver-history", icon: BookOpen },
+{ title: "Leave Approver History", url: "/dashboard/approval-history", icon: BookOpen },
   {
     title: "Leave Management",
     icon: CalendarClock,
