@@ -13,8 +13,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, User } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar, Clock, MapPin, User, Timer } from 'lucide-react';
+import { format, differenceInMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import type {
   LeaveRequestWithDetails,
@@ -42,6 +42,24 @@ export function ApprovalDialog({
 }: ApprovalDialogProps) {
   const [comments, setComments] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Calculate overtime duration
+  const calculateOvertimeDuration = (startTime: string | Date, endTime: string | Date) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    
+    const totalMinutes = differenceInMinutes(end, start);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours === 0) {
+      return `${minutes} minutes`;
+    } else if (minutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    }
+  };
 
   // --- CORE FUNCTION - UNCHANGED ---
   const handleAction = async (action: 'approve' | 'reject') => {
@@ -97,7 +115,6 @@ export function ApprovalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* --- MODIFIED DIALOG CONTENT FOR SCROLLING --- */}
       <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -119,14 +136,12 @@ export function ApprovalDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* --- SCROLLABLE CONTENT WRAPPER --- */}
         <div className="flex-1 overflow-y-auto space-y-6 p-1 pr-6 -ml-1">
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Employee Details</h3>
               {getStatusBadge(request.status)}
             </div>
-            {/* The responsive grid already "compresses" on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-gray-500" />
@@ -179,7 +194,7 @@ export function ApprovalDialog({
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Start Time</Label>
                     <p className="mt-1 p-2 bg-gray-50 rounded border">
@@ -197,6 +212,18 @@ export function ApprovalDialog({
                         'MMM d, yyyy h:mm a'
                       )}
                     </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Total Duration</Label>
+                    <div className="mt-1 p-2 bg-blue-50 rounded border border-blue-200 flex items-center gap-2">
+                      <Timer className="h-4 w-4 text-blue-600" />
+                      <p className="font-semibold text-blue-800">
+                        {calculateOvertimeDuration(
+                          overtimeRequest.startTime,
+                          overtimeRequest.endTime
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
