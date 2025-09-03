@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,6 @@ interface ProfileSettingsProps {
 }
 
 export function ProfileSettings({ profile }: ProfileSettingsProps) {
-
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [showPasswords, setShowPasswords] = useState({
@@ -25,6 +24,9 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
     new: false,
     confirm: false
   })
+
+  const profileFormRef = useRef<HTMLFormElement>(null)
+  const passwordFormRef = useRef<HTMLFormElement>(null)
 
   const [profileData, setProfileData] = useState<UpdateProfileData>({
     name: profile.name,
@@ -37,35 +39,43 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
     confirmPassword: ""
   })
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
+  const handleProfileUpdate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Prevent double submission
+    if (isUpdatingProfile) return
+    
     setIsUpdatingProfile(true)
 
     try {
       const result = await updateProfile(profileData)
       
       if (result.success) {
-        toast.success(`${result.message}`)
+        toast.success(result.message || "Profile updated successfully")
       } else {
-        toast.error(`${result.message}`)
+        toast.error(result.message || "Failed to update profile")
       }
     } catch (error) {
-     toast.error(`${error}`)
+      toast.error("An error occurred while updating profile")
+      console.error("Profile update error:", error)
     } finally {
       setIsUpdatingProfile(false)
     }
-  }
+  }, [profileData, isUpdatingProfile])
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handlePasswordChange = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Prevent double submission
+    if (isChangingPassword) return
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Error: New passwords do not match.")
+      toast.error("New passwords do not match")
       return
     }
 
     if (passwordData.newPassword.length < 8) {
-      toast.error("Error: Password must be at least 8 characters long.")
+      toast.error("Password must be at least 8 characters long")
       return
     }
 
@@ -75,28 +85,83 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
       const result = await changePassword(passwordData)
       
       if (result.success) {
-        toast.success(`${result.message}`)
+        toast.success(result.message || "Password changed successfully")
         setPasswordData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: ""
         })
+        // Reset form
+        passwordFormRef.current?.reset()
       } else {
-        toast.success(`${result.message}`)
+        toast.error(result.message || "Failed to change password")
       }
     } catch (error) {
-      toast.error(`${error}`)
+      toast.error("An error occurred while changing password")
+      console.error("Password change error:", error)
     } finally {
       setIsChangingPassword(false)
     }
-  }
+  }, [passwordData, isChangingPassword])
 
-  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
+  const togglePasswordVisibility = useCallback((field: keyof typeof showPasswords) => {
     setShowPasswords(prev => ({
       ...prev,
       [field]: !prev[field]
     }))
-  }
+  }, [])
+
+  const handleProfileDataChange = useCallback((field: keyof UpdateProfileData) => 
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setProfileData(prev => ({ ...prev, [field]: e.target.value }))
+    }, [])
+
+  const handlePasswordDataChange = useCallback((field: keyof ChangePasswordData) => 
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPasswordData(prev => ({ ...prev, [field]: e.target.value }))
+    }, [])
+
+  // Memoize password inputs to prevent unnecessary re-renders
+  const passwordInputs = useMemo(() => [
+    {
+      id: "currentPassword",
+      label: "Current Password",
+      value: passwordData.currentPassword,
+      onChange: handlePasswordDataChange("currentPassword"),
+      show: showPasswords.current,
+      toggle: () => togglePasswordVisibility('current'),
+      placeholder: "Enter your current password",
+      colSpan: "col-span-full"
+    },
+    {
+      id: "newPassword",
+      label: "New Password",
+      value: passwordData.newPassword,
+      onChange: handlePasswordDataChange("newPassword"),
+      show: showPasswords.new,
+      toggle: () => togglePasswordVisibility('new'),
+      placeholder: "Enter new password",
+      colSpan: "col-span-full md:col-span-1"
+    },
+    {
+      id: "confirmPassword",
+      label: "Confirm New Password",
+      value: passwordData.confirmPassword,
+      onChange: handlePasswordDataChange("confirmPassword"),
+      show: showPasswords.confirm,
+      toggle: () => togglePasswordVisibility('confirm'),
+      placeholder: "Confirm new password",
+      colSpan: "col-span-full md:col-span-1"
+    }
+  ], [passwordData, showPasswords, handlePasswordDataChange, togglePasswordVisibility])
+
+  // Memoize read-only fields
+  const readOnlyFields = useMemo(() => [
+    { label: "Employee ID", value: profile.employeeId },
+    { label: "Role", value: profile.role },
+    { label: "Department", value: profile.department?.name || "Not assigned" },
+    { label: "Business Unit", value: profile.classification || "Not assigned" }
+  ], [profile])
 
   return (
     <div className="space-y-6">
@@ -111,16 +176,17 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
+          <form ref={profileFormRef} onSubmit={handleProfileUpdate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
                   value={profileData.name}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={handleProfileDataChange("name")}
                   placeholder="Enter your full name"
                   required
+                  disabled={isUpdatingProfile}
                 />
               </div>
 
@@ -130,9 +196,10 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
                   id="email"
                   type="email"
                   value={profileData.email || ""}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={handleProfileDataChange("email")}
                   placeholder="Enter your email address"
                   required
+                  disabled={isUpdatingProfile}
                 />
               </div>
             </div>
@@ -140,37 +207,15 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
             {/* Read-only fields */}
             <Separator />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Employee ID</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={profile.employeeId} disabled />
-                  <Badge variant="outline">Read-only</Badge>
+              {readOnlyFields.map((field) => (
+                <div key={field.label} className="space-y-2">
+                  <Label>{field.label}</Label>
+                  <div className="flex items-center gap-2">
+                    <Input value={field.value} disabled />
+                    <Badge variant="outline">Read-only</Badge>
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={profile.role} disabled />
-                  <Badge variant="outline">Read-only</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={profile.department?.name || "Not assigned"} disabled />
-                  <Badge variant="outline">Read-only</Badge>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Business Unit</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={profile.classification || "Not assigned"} disabled />
-                  <Badge variant="outline">Read-only</Badge>
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="flex justify-end pt-4">
@@ -204,90 +249,46 @@ export function ProfileSettings({ profile }: ProfileSettingsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPasswords.current ? "text" : "password"}
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                  placeholder="Enter your current password"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => togglePasswordVisibility('current')}
-                >
-                  {showPasswords.current ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
+          <form ref={passwordFormRef} onSubmit={handlePasswordChange} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showPasswords.new ? "text" : "password"}
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                    placeholder="Enter new password"
-                    required
-                    minLength={8}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => togglePasswordVisibility('new')}
-                  >
-                    {showPasswords.new ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
+              {passwordInputs.map((input) => (
+                <div key={input.id} className={input.colSpan}>
+                  <div className="space-y-2">
+                    <Label htmlFor={input.id}>{input.label}</Label>
+                    <div className="relative">
+                      <Input
+                        id={input.id}
+                        type={input.show ? "text" : "password"}
+                        value={input.value}
+                        onChange={input.onChange}
+                        placeholder={input.placeholder}
+                        required
+                        minLength={input.id !== "currentPassword" ? 8 : 1}
+                        disabled={isChangingPassword}
+                        autoComplete={
+                          input.id === "currentPassword" ? "current-password" : 
+                          input.id === "newPassword" ? "new-password" : "new-password"
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={input.toggle}
+                        disabled={isChangingPassword}
+                        tabIndex={-1}
+                      >
+                        {input.show ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showPasswords.confirm ? "text" : "password"}
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="Confirm new password"
-                    required
-                    minLength={8}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => togglePasswordVisibility('confirm')}
-                  >
-                    {showPasswords.confirm ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="text-sm text-muted-foreground">
