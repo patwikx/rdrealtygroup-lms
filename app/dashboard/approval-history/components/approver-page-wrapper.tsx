@@ -116,7 +116,7 @@ export default function LeaveApprovalPageWrapper() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="w-full">
         {/* Header Skeleton */}
         <div className="mb-8">
           <Skeleton className="h-8 w-64 mb-2" />
@@ -171,7 +171,7 @@ export default function LeaveApprovalPageWrapper() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">

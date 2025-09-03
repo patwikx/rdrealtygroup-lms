@@ -17,6 +17,12 @@ export default function AccountPageWrapper() {
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure component is mounted before rendering interactive elements
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -44,12 +50,15 @@ export default function AccountPageWrapper() {
   }
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (mounted) {
+      fetchData()
+    }
+  }, [mounted])
 
-  if (loading) {
+  // Show loading skeleton until component is mounted and data is loaded
+  if (!mounted || loading) {
     return (
-      <div className="space-y-8">
+      <div className="w-full space-y-8">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
@@ -100,7 +109,7 @@ export default function AccountPageWrapper() {
 
   if (!profile || !stats) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+      <div className="w-full">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="p-4 bg-muted/50 rounded-full mb-4">
@@ -121,7 +130,7 @@ export default function AccountPageWrapper() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="w-full space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -129,7 +138,7 @@ export default function AccountPageWrapper() {
             <User className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl mt-4 font-bold tracking-tight">My Account</h1>
+            <h1 className="text-3xl font-bold tracking-tight">My Account</h1>
             <p className="text-muted-foreground mt-1">
               Manage your profile and view statistics
             </p>
@@ -148,9 +157,8 @@ export default function AccountPageWrapper() {
       
       {/* Components are now stacked vertically in a logical order */}
       <ProfileHeader profile={profile} />
-        <ProfileSettings profile={profile} />
+      <ProfileSettings profile={profile} />
       <AccountStats stats={stats} />
-
     </div>
   )
 }
